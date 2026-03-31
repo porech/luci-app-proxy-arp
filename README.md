@@ -84,7 +84,7 @@ make package/luci-app-proxy-arp/compile
 | `probe_ip` | IP address | probe only | IP to ping to detect reachability |
 | `interval` | integer | no | Seconds between pings (default: `10`) |
 | `timeout` | integer | no | Ping timeout in seconds (default: `2`) |
-| `count` | integer | no | Pings per cycle (default: `1`) |
+| `count` | integer | no | Pings per cycle (default: `3`) |
 | `add_route` | boolean | no | Also manage a /32 host route (default: `0`) |
 | `route_interface` | string | when add_route | Interface for the /32 route |
 

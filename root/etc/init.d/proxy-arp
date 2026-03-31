@@ -69,7 +69,7 @@ start_instance() {
 			config_get probe_ip "$name" probe_ip
 			config_get interval "$name" interval 10
 			config_get timeout "$name" timeout 2
-			config_get count "$name" count 1
+			config_get count "$name" count 3
 
 			[ -z "$probe_ip" ] && { logger -t proxy-arp "Instance '$name': mode 'probe' requires probe_ip"; return 0; }
 			validate_ip "$probe_ip" || { logger -t proxy-arp "Invalid probe_ip '$probe_ip' in '$name'"; return 0; }

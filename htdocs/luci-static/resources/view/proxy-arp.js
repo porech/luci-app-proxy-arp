@@ -107,7 +107,7 @@ return view.extend({
 
 		o = s.option(form.Value, 'count', _('Ping count'),
 			_('Number of ping packets to send per probe cycle.'));
-		o.default = '1';
+		o.default = '3';
 		o.datatype = 'uinteger';
 		o.depends('mode', 'probe');
 		o.optional = true;
