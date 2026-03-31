@@ -92,30 +92,30 @@ make package/luci-app-proxy-arp/compile
 
 ### Static proxy for a device always behind a VPN
 
-A matrix mixer (192.168.31.1) is always at the studio, reachable via WireGuard tunnel `wg0`:
+A server (192.168.1.50) is permanently at a remote office, reachable via WireGuard tunnel `wg0`:
 
 ```
 config proxy-arp 'global'
     option enabled '1'
 
-config instance 'matrix1'
+config instance 'server'
     option enabled '1'
     option mode 'always'
-    option proxy_ip '192.168.31.1'
-    option interface 'eth1'
+    option proxy_ip '192.168.1.50'
+    option interface 'br-lan'
 ```
 
 ### Dynamic proxy for a roaming device
 
-A device (192.168.31.10) sometimes moves to a remote site connected via a MiniPC with VPN address 10.0.3.10. When the MiniPC is reachable, the device is remote and needs Proxy ARP + a route:
+A laptop (192.168.1.100) sometimes moves to a remote site connected via a VPN gateway with tunnel address 10.0.0.2. When the remote gateway is reachable, the laptop is remote and needs Proxy ARP + a route:
 
 ```
-config instance 'device1'
+config instance 'laptop'
     option enabled '1'
     option mode 'probe'
-    option proxy_ip '192.168.31.10'
-    option interface 'eth1'
-    option probe_ip '10.0.3.10'
+    option proxy_ip '192.168.1.100'
+    option interface 'br-lan'
+    option probe_ip '10.0.0.2'
     option add_route '1'
     option route_interface 'wg0'
     option interval '10'
