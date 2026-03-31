@@ -1,0 +1,5 @@
+#!/bin/sh
+# Re-apply proxy-arp entries when an interface comes up.
+# Network restart wipes ARP neighbor tables, so "always" mode entries
+# need to be re-created after the interface is back.
+[ "$ACTION" = "ifup" ] && /etc/init.d/proxy-arp restart 2>/dev/null
