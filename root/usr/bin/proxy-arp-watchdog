@@ -1,0 +1,49 @@
+#!/bin/sh
+# proxy-arp-watchdog — monitors one IP and manages its ARP proxy entry
+# Usage: proxy-arp-watchdog <name> <probe_ip> <proxy_ip> <interface> [add_route] [route_interface] [interval] [timeout] [count]
+
+NAME="$1"
+PROBE_IP="$2"
+PROXY_IP="$3"
+INTERFACE="$4"
+ADD_ROUTE="${5:-0}"
+ROUTE_IF="$6"
+INTERVAL="${7:-10}"
+TIMEOUT="${8:-2}"
+COUNT="${9:-1}"
+
+[ -z "$NAME" ] || [ -z "$PROBE_IP" ] || [ -z "$PROXY_IP" ] || [ -z "$INTERFACE" ] && {
+	echo "Usage: $0 <name> <probe_ip> <proxy_ip> <interface> [add_route] [route_if] [interval] [timeout] [count]" >&2
+	exit 1
+}
+
+logger -t "proxy-arp[$NAME]" "Started: probe=$PROBE_IP proxy=$PROXY_IP if=$INTERFACE route=$ADD_ROUTE interval=${INTERVAL}s"
+
+proxy_is_set() {
+	ip neigh show proxy "$PROXY_IP" dev "$INTERFACE" 2>/dev/null | grep -q proxy
+}
+
+probe_is_up() {
+	ping -c "$COUNT" -W "$TIMEOUT" "$PROBE_IP" >/dev/null 2>&1
+}
+
+add_proxy() {
+	logger -t "proxy-arp[$NAME]" "Probe $PROBE_IP UP — enabling Proxy ARP for $PROXY_IP on $INTERFACE"
+	ip neigh add proxy "$PROXY_IP" dev "$INTERFACE" 2>/dev/null
+	[ "$ADD_ROUTE" = "1" ] && [ -n "$ROUTE_IF" ] && ip route replace "$PROXY_IP/32" dev "$ROUTE_IF" 2>/dev/null
+}
+
+del_proxy() {
+	logger -t "proxy-arp[$NAME]" "Probe $PROBE_IP DOWN — removing Proxy ARP for $PROXY_IP"
+	ip neigh del proxy "$PROXY_IP" dev "$INTERFACE" 2>/dev/null
+	[ "$ADD_ROUTE" = "1" ] && [ -n "$ROUTE_IF" ] && ip route del "$PROXY_IP/32" dev "$ROUTE_IF" 2>/dev/null
+}
+
+while true; do
+	if probe_is_up; then
+		proxy_is_set || add_proxy
+	else
+		proxy_is_set && del_proxy
+	fi
+	sleep "$INTERVAL"
+done

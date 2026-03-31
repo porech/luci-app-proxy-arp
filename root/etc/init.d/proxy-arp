@@ -1,0 +1,124 @@
+#!/bin/sh /etc/rc.common
+
+USE_PROCD=1
+START=95
+STOP=01
+
+CONFIGURATION="proxy-arp"
+
+validate_ip() {
+	echo "$1" | grep -qE '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+}
+
+validate_ifname() {
+	echo "$1" | grep -qE '^[a-zA-Z0-9_.-]+$'
+}
+
+validate_int() {
+	case "$1" in
+		''|*[!0-9]*) return 1 ;;
+	esac
+	[ "$1" -ge 1 ] && return 0
+	return 1
+}
+
+start_service() {
+	config_load "${CONFIGURATION}"
+
+	local global_enabled
+	config_get_bool global_enabled global enabled 0
+	[ "$global_enabled" -eq 0 ] && return 0
+
+	config_foreach start_instance instance
+}
+
+start_instance() {
+	local name="$1"
+	local enabled mode proxy_ip interface add_route route_interface
+
+	config_get_bool enabled "$name" enabled 1
+	[ "$enabled" -eq 0 ] && return 0
+
+	config_get mode "$name" mode "probe"
+	config_get proxy_ip "$name" proxy_ip
+	config_get interface "$name" interface
+	config_get_bool add_route "$name" add_route 0
+	config_get route_interface "$name" route_interface
+
+	[ -z "$proxy_ip" ] || [ -z "$interface" ] && {
+		logger -t proxy-arp "Incomplete instance '$name': proxy_ip and interface are required"
+		return 0
+	}
+
+	validate_ip "$proxy_ip" || { logger -t proxy-arp "Invalid proxy_ip '$proxy_ip' in '$name'"; return 0; }
+	validate_ifname "$interface" || { logger -t proxy-arp "Invalid interface '$interface' in '$name'"; return 0; }
+
+	if [ "$add_route" -eq 1 ]; then
+		[ -z "$route_interface" ] && { logger -t proxy-arp "Instance '$name': add_route requires route_interface"; return 0; }
+		validate_ifname "$route_interface" || { logger -t proxy-arp "Invalid route_interface '$route_interface' in '$name'"; return 0; }
+	fi
+
+	case "$mode" in
+		always)
+			logger -t proxy-arp "Instance '$name': always-on Proxy ARP for $proxy_ip on $interface"
+			ip neigh replace proxy "$proxy_ip" dev "$interface" 2>/dev/null
+			[ "$add_route" -eq 1 ] && ip route replace "$proxy_ip/32" dev "$route_interface" 2>/dev/null
+			;;
+		probe)
+			local probe_ip interval timeout count
+			config_get probe_ip "$name" probe_ip
+			config_get interval "$name" interval 10
+			config_get timeout "$name" timeout 2
+			config_get count "$name" count 1
+
+			[ -z "$probe_ip" ] && { logger -t proxy-arp "Instance '$name': mode 'probe' requires probe_ip"; return 0; }
+			validate_ip "$probe_ip" || { logger -t proxy-arp "Invalid probe_ip '$probe_ip' in '$name'"; return 0; }
+			validate_int "$interval" || { logger -t proxy-arp "Invalid interval '$interval' in '$name'"; return 0; }
+			validate_int "$timeout" || { logger -t proxy-arp "Invalid timeout '$timeout' in '$name'"; return 0; }
+			validate_int "$count" || { logger -t proxy-arp "Invalid count '$count' in '$name'"; return 0; }
+
+			procd_open_instance "proxy_arp_${name}"
+			procd_set_param command /usr/bin/proxy-arp-watchdog \
+				"$name" "$probe_ip" "$proxy_ip" "$interface" \
+				"$add_route" "$route_interface" \
+				"$interval" "$timeout" "$count"
+			procd_set_param file "/etc/config/${CONFIGURATION}"
+			procd_set_param stdout 1
+			procd_set_param stderr 1
+			procd_set_param respawn 3600 5 5
+			procd_close_instance
+			;;
+		*)
+			logger -t proxy-arp "Unknown mode '$mode' in instance '$name'"
+			;;
+	esac
+}
+
+stop_service() {
+	config_load "${CONFIGURATION}"
+	config_foreach cleanup_instance instance
+}
+
+cleanup_instance() {
+	local name="$1"
+	local proxy_ip interface add_route route_interface
+
+	config_get proxy_ip "$name" proxy_ip
+	config_get interface "$name" interface
+	config_get_bool add_route "$name" add_route 0
+	config_get route_interface "$name" route_interface
+
+	[ -z "$proxy_ip" ] || [ -z "$interface" ] && return 0
+
+	ip neigh del proxy "$proxy_ip" dev "$interface" 2>/dev/null
+	[ "$add_route" -eq 1 ] && [ -n "$route_interface" ] && ip route del "$proxy_ip/32" dev "$route_interface" 2>/dev/null
+}
+
+service_triggers() {
+	procd_add_reload_trigger "${CONFIGURATION}"
+}
+
+reload_service() {
+	stop
+	start
+}

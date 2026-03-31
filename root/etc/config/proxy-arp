@@ -1,0 +1,2 @@
+config proxy-arp 'global'
+	option enabled '0'

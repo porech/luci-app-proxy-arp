@@ -1,0 +1,15 @@
+{
+	"admin/network/proxy-arp": {
+		"title": "Proxy ARP",
+		"order": 60,
+		"action": {
+			"type": "view",
+			"path": "proxy-arp"
+		},
+		"depends": {
+			"uci": {
+				"proxy-arp": true
+			}
+		}
+	}
+}

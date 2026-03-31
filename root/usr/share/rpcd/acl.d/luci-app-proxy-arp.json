@@ -1,0 +1,11 @@
+{
+	"luci-app-proxy-arp": {
+		"description": "Grant access to Proxy ARP configuration",
+		"read": {
+			"uci": ["proxy-arp"]
+		},
+		"write": {
+			"uci": ["proxy-arp"]
+		}
+	}
+}
