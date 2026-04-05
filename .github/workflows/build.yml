@@ -56,11 +56,11 @@ jobs:
           tar xf ${{ steps.sdk-name.outputs.file }} --strip-components=1 -C /tmp/sdk
           cd /tmp/sdk
           cp feeds.conf.default feeds.conf
-          echo "src-link proxy-arp ${{ github.workspace }}" >> feeds.conf
+          echo "src-link proxyarp ${{ github.workspace }}" >> feeds.conf
           ./scripts/feeds update -a
           ./scripts/feeds install luci-app-proxy-arp
           RELEASE=$(cd ${{ github.workspace }} && git rev-list --count HEAD)
-          sed -i "s/^PKG_RELEASE:=.*/PKG_RELEASE:=${RELEASE}/" /tmp/sdk/feeds/proxy-arp/Makefile
+          sed -i "s/^PKG_RELEASE:=.*/PKG_RELEASE:=${RELEASE}/" /tmp/sdk/feeds/proxyarp/Makefile
           make defconfig
           make package/luci-app-proxy-arp/compile V=s -j$(nproc)
 
