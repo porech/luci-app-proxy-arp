@@ -71,14 +71,14 @@ Then open LuCI and navigate to **Network → Proxy ARP**.
 Add to `feeds.conf.default`:
 
 ```
-src-git proxy-arp https://github.com/porech/luci-app-proxy-arp.git
+src-git proxyarp https://github.com/porech/luci-app-proxy-arp.git
 ```
 
 Then:
 
 ```sh
-./scripts/feeds update proxy-arp
-./scripts/feeds install -a -p proxy-arp
+./scripts/feeds update proxyarp
+./scripts/feeds install -a -p proxyarp
 make menuconfig   # enable LuCI → Applications → luci-app-proxy-arp
 make package/luci-app-proxy-arp/compile
 ```
