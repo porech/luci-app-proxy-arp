@@ -32,15 +32,31 @@ Device A sends traffic to Router, Router forwards through VPN to Device B
 
 ## Install
 
-### From the package repository
+### OpenWrt 25.12 (apk)
 
 ```sh
-# Add the signing key
+# Add signing key
+wget -qO /etc/apk/keys/proxy-arp-apk.pem \
+  https://porech.github.io/luci-app-proxy-arp/proxy-arp-apk.pem
+
+# Add feed
+echo "https://porech.github.io/luci-app-proxy-arp/25.12/packages.adb" \
+  >> /etc/apk/repositories.d/customfeeds.list
+
+# Install
+apk update
+apk add luci-app-proxy-arp
+```
+
+### OpenWrt 24.10 (opkg)
+
+```sh
+# Add signing key
 wget -qO /etc/opkg/keys/89400a7a4cc5f2c8 \
   https://porech.github.io/luci-app-proxy-arp/proxy-arp-repo.pub
 
-# Add the feed
-echo "src/gz proxy-arp https://porech.github.io/luci-app-proxy-arp" \
+# Add feed
+echo "src/gz proxy-arp https://porech.github.io/luci-app-proxy-arp/24.10" \
   >> /etc/opkg/customfeeds.conf
 
 # Install
@@ -48,7 +64,9 @@ opkg update
 opkg install luci-app-proxy-arp
 ```
 
-### Build from source (OpenWRT SDK)
+Then open LuCI and navigate to **Network → Proxy ARP**.
+
+### Build from source (OpenWrt SDK)
 
 Add to `feeds.conf.default`:
 
@@ -138,7 +156,7 @@ config instance 'public_ip'
 
 ## Requirements
 
-- OpenWRT 23.05+ (firewall4 / nftables)
+- OpenWrt 24.10 or 25.12 (firewall4 / nftables)
 - `luci-base`
 - `ip-full`
 
